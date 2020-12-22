@@ -19,6 +19,7 @@ import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
 import org.jgrapht.GraphPath;
+import org.jgrapht.alg.interfaces.SpanningTreeAlgorithm;
 import org.jgrapht.alg.tour.ChristofidesThreeHalvesApproxMetricTSP;
 import org.jgrapht.alg.tour.TwoApproxMetricTSP;
 import org.jgrapht.graph.DefaultEdge;
@@ -36,71 +37,67 @@ public class tsp_view extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        File instance_file = new File("Beispiel2(280).txt");
+        File instance_file = new File("Beispiel1(7).txt");
         Instance instance = new Instance(instance_file);
         Group subview_root = new Group();
         StackPane mainview_root = new StackPane();
         Scene scene = new Scene(mainview_root, 640, 480);
 
+        double x_diff = instance.max_x() - instance.min_x();
+        double y_diff = instance.max_y() - instance.min_y();
+        double diff = Math.min(x_diff, y_diff);
 
-        SubScene subScene = new SubScene(subview_root, instance.max_x() - instance.min_x(), instance.max_y() - instance.min_y());
+        SubScene subScene = new SubScene(subview_root, x_diff, y_diff);
         subScene.setFill(Color.LIGHTGRAY);
 
         NumberBinding scale_height = Bindings.divide(scene.heightProperty(), subScene.heightProperty());
         NumberBinding scale_width = Bindings.divide(scene.widthProperty(), subScene.widthProperty());
-
-        //double x_scale = (scene.getWidth() / subScene.getWidth());
-
         NumberBinding scale = Bindings.min(scale_height, scale_width);
 
         subScene.scaleXProperty().bind(scale);
         subScene.scaleYProperty().bind(scale);
 
-        //subScene.setLayoutX(0);
-        //subScene.setLayoutX(0);
-
-        //double scale = Math.min(x_scale, y_scale);
-
-        //subScene.getTransforms().add(new Scale(scale, scale, 0, 0));
-        //subScene.getTransforms().add(new Scale(1, -1, 0, subScene.getHeight() / 2));
-        //subScene.getTransforms().add(new Translate(0,-20));
         subview_root.getTransforms().add(new Translate(-instance.min_x(), -instance.min_y()));
-        subview_root.getTransforms().add(new Scale(-0.9, 0.9, instance.min_x() + (instance.max_x() - instance.min_x()) / 2, instance.min_y() + (instance.max_y() - instance.min_y()) / 2));
-        //ew Scale(1, 2)
+        subview_root.getTransforms().add(new Scale(0.9, -0.9, instance.min_x() + (instance.max_x() - instance.min_x()) / 2, instance.min_y() + (instance.max_y() - instance.min_y()) / 2));
 
         mainview_root.getChildren().add(subScene);
-        //mainview_root.setMargin(subScene,new Insets(15));
 
-
-        //x=x_min+a*(x_max-x_min)
-        //       xd=a*x_diff
-
+        int factor = 300;
 
         for (Point2D point : instance.points
         ) {
 
 
-            subview_root.getChildren().add(new Circle(point.getX(), point.getY(), 3));
+            subview_root.getChildren().add(new Circle(point.getX(), point.getY(), diff / factor * 2));
 
 
         }
-
-        for (DefaultEdge edge : instance.getMST().getEdges()
+        SpanningTreeAlgorithm.SpanningTree<DefaultEdge> mst = instance.getMST();
+        for (DefaultEdge edge : mst.getEdges()
         ) {
             Point2D source = instance.graph.getEdgeSource(edge);
             Point2D target = instance.graph.getEdgeTarget(edge);
-            subview_root.getChildren().add(new Line(source.getX(), source.getY(), target.getX(), target.getY()));
+            Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
+            line.setStrokeWidth(diff / factor);
+            subview_root.getChildren().add(line);
 
         }
 
         GraphPath<Point2D, DefaultEdge> mst_tour = new TwoApproxMetricTSP<Point2D, DefaultEdge>().getTour(instance.graph);
         GraphPath<Point2D, DefaultEdge> christofides_tour = new ChristofidesThreeHalvesApproxMetricTSP<Point2D, DefaultEdge>().getTour(instance.graph);
 
+        double mst_ratio = mst_tour.getWeight() / mst.getWeight();
+        double chr_ratio = christofides_tour.getWeight() / mst.getWeight();
+
+        System.out.println("MST=" + mst.getWeight());
+        System.out.println("MST-Tour=" + mst_ratio);
+        System.out.println("Christopides-Tour=" + chr_ratio);
         for (DefaultEdge edge : mst_tour.getEdgeList()
         ) {
             Point2D source = instance.graph.getEdgeSource(edge);
             Point2D target = instance.graph.getEdgeTarget(edge);
             Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
+            line.setStrokeWidth(diff / factor);
             line.setStroke(Color.GREEN);
 
             subview_root.getChildren().add(line);
@@ -112,6 +109,7 @@ public class tsp_view extends Application {
             Point2D source = instance.graph.getEdgeSource(edge);
             Point2D target = instance.graph.getEdgeTarget(edge);
             Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
+            line.setStrokeWidth(diff / factor);
             line.setStroke(Color.RED);
 
             subview_root.getChildren().add(line);

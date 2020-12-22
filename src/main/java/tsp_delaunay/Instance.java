@@ -72,6 +72,7 @@ public class Instance {
                     this.points.add(new Point2D.Double(x, y));
                 } catch (Exception e) {
                     System.out.println("Es gibt eine Zeile in dem File die man nicht lesen kann.");
+                    //break;
                     //e.printStackTrace();
                 }
 
