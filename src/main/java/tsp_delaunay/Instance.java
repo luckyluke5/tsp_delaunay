@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 /*public class Edge extends DefaultEdge{
     boolean in_tour;
@@ -41,6 +42,12 @@ public class Instance {
             graph.addVertex(point);
 
         }
+
+        this.points = this.points.stream().unordered().distinct().collect(Collectors
+                .toCollection(ArrayList::new));
+
+        //boolean new_array =new ArrayList < Point2D >;
+
         for (int i = 0; i < points.size(); i++) {
             for (int j = i + 1; j < points.size(); j++) {
                 DefaultEdge edge = graph.addEdge(points.get(i), points.get(j));
@@ -62,8 +69,7 @@ public class Instance {
                     int point_number = Integer.parseInt(scanner.next());
                     double x = Double.parseDouble(scanner.next());
                     double y = Double.parseDouble(scanner.next());
-                    this.points.add(new Point2D.Double(x, y) {
-                    });
+                    this.points.add(new Point2D.Double(x, y));
                 } catch (Exception e) {
                     System.out.println("Es gibt eine Zeile in dem File die man nicht lesen kann.");
                     //e.printStackTrace();

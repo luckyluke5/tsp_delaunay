@@ -1,12 +1,15 @@
 package tsp_delaunay;
 
 import javafx.application.Application;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.NumberBinding;
 import javafx.collections.ObservableList;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.SubScene;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
@@ -33,29 +36,40 @@ public class tsp_view extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        File instance_file = new File("Beispiel3(52).txt");
+        File instance_file = new File("Beispiel2(280).txt");
         Instance instance = new Instance(instance_file);
         Group subview_root = new Group();
-        Group mainview_root = new Group();
+        StackPane mainview_root = new StackPane();
         Scene scene = new Scene(mainview_root, 640, 480);
 
 
         SubScene subScene = new SubScene(subview_root, instance.max_x() - instance.min_x(), instance.max_y() - instance.min_y());
         subScene.setFill(Color.LIGHTGRAY);
 
-        double y_scale = (scene.getHeight() / subScene.getHeight());
-        double x_scale = (scene.getWidth() / subScene.getWidth());
+        NumberBinding scale_height = Bindings.divide(scene.heightProperty(), subScene.heightProperty());
+        NumberBinding scale_width = Bindings.divide(scene.widthProperty(), subScene.widthProperty());
 
-        double scale = Math.max(x_scale, y_scale);
+        //double x_scale = (scene.getWidth() / subScene.getWidth());
 
-        subScene.getTransforms().add(new Scale(scale, scale, 0, 0));
-        subScene.getTransforms().add(new Scale(1, -1, 0, subScene.getHeight() / 2));
+        NumberBinding scale = Bindings.min(scale_height, scale_width);
+
+        subScene.scaleXProperty().bind(scale);
+        subScene.scaleYProperty().bind(scale);
+
+        //subScene.setLayoutX(0);
+        //subScene.setLayoutX(0);
+
+        //double scale = Math.min(x_scale, y_scale);
+
+        //subScene.getTransforms().add(new Scale(scale, scale, 0, 0));
+        //subScene.getTransforms().add(new Scale(1, -1, 0, subScene.getHeight() / 2));
         //subScene.getTransforms().add(new Translate(0,-20));
-
-        subview_root.getTransforms().add(new Scale(0.9, 0.9));
-        subview_root.getTransforms().add(new Translate(0, 100));
+        subview_root.getTransforms().add(new Translate(-instance.min_x(), -instance.min_y()));
+        subview_root.getTransforms().add(new Scale(-0.9, 0.9, instance.min_x() + (instance.max_x() - instance.min_x()) / 2, instance.min_y() + (instance.max_y() - instance.min_y()) / 2));
+        //ew Scale(1, 2)
 
         mainview_root.getChildren().add(subScene);
+        //mainview_root.setMargin(subScene,new Insets(15));
 
 
         //x=x_min+a*(x_max-x_min)
@@ -64,7 +78,6 @@ public class tsp_view extends Application {
 
         for (Point2D point : instance.points
         ) {
-
 
 
             subview_root.getChildren().add(new Circle(point.getX(), point.getY(), 3));
