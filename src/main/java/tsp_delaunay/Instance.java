@@ -13,6 +13,15 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
+import java.util.stream.Collectors;
+
+/*public class Edge extends DefaultEdge{
+    boolean in_tour;
+
+    public Edge() {
+        this.in_tour = false;
+    }
+}*/
 
 public class Instance {
 
@@ -33,6 +42,12 @@ public class Instance {
             graph.addVertex(point);
 
         }
+
+        this.points = this.points.stream().unordered().distinct().collect(Collectors
+                .toCollection(ArrayList::new));
+
+        //boolean new_array =new ArrayList < Point2D >;
+
         for (int i = 0; i < points.size(); i++) {
             for (int j = i + 1; j < points.size(); j++) {
                 DefaultEdge edge = graph.addEdge(points.get(i), points.get(j));
@@ -44,7 +59,7 @@ public class Instance {
     }
 
     public void readPointsFromFile(File file) {
-        this.points = new ArrayList<Point2D>();
+        this.points = new ArrayList<>();
 
         try {
             //File myObj = new File("filename.txt");
@@ -54,15 +69,14 @@ public class Instance {
                     int point_number = Integer.parseInt(scanner.next());
                     double x = Double.parseDouble(scanner.next());
                     double y = Double.parseDouble(scanner.next());
-                    this.points.add(new Point2D.Double(x, y) {
-                    });
+                    this.points.add(new Point2D.Double(x, y));
                 } catch (Exception e) {
                     System.out.println("Es gibt eine Zeile in dem File die man nicht lesen kann.");
+                    //break;
                     //e.printStackTrace();
                 }
 
-                //String data = myReader.nextLine();
-                //System.out.println(data);
+
             }
             scanner.close();
         } catch (FileNotFoundException e) {
@@ -71,30 +85,38 @@ public class Instance {
         }
     }
 
-    public Point2D min_x() {
-        return points.stream().min(Comparator.comparing(Point2D::getX)).orElseThrow(NoSuchElementException::new);
+    public double min_x() {
+        return points.stream().min(Comparator.comparing(Point2D::getX)).orElseThrow(NoSuchElementException::new).getX();
 
     }
 
-    public Point2D max_x() {
-        return points.stream().max(Comparator.comparing(Point2D::getX)).orElseThrow(NoSuchElementException::new);
+    public double max_x() {
+        return points.stream().max(Comparator.comparing(Point2D::getX)).orElseThrow(NoSuchElementException::new).getX();
 
 
     }
 
-    public Point2D min_y() {
-        return points.stream().min(Comparator.comparing(Point2D::getY)).orElseThrow(NoSuchElementException::new);
+    public double min_y() {
+        return points.stream().min(Comparator.comparing(Point2D::getY)).orElseThrow(NoSuchElementException::new).getY();
 
     }
 
-    public Point2D max_y() {
-        return points.stream().max(Comparator.comparing(Point2D::getY)).orElseThrow(NoSuchElementException::new);
+    public double max_y() {
+        return points.stream().max(Comparator.comparing(Point2D::getY)).orElseThrow(NoSuchElementException::new).getY();
 
 
     }
 
     public SpanningTreeAlgorithm.SpanningTree<DefaultEdge> getMST() {
-        return ((KruskalMinimumSpanningTree<Point2D, DefaultEdge>) new KruskalMinimumSpanningTree(graph)).getSpanningTree();
+        return new KruskalMinimumSpanningTree<>(graph).getSpanningTree();
     }
+
+    public void produceTour() {
+        //DepthFirstIterator<Point2D,DefaultEdge> iterator = new DepthFirstIterator<>((Graph<Point2D, DefaultEdge>) this.getMST());
+
+
+    }
+
+
 }
 

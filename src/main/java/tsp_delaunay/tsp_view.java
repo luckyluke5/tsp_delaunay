@@ -3,15 +3,13 @@ package tsp_delaunay;
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.NumberBinding;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ObservableList;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.SubScene;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
@@ -20,6 +18,10 @@ import javafx.scene.text.Text;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
+import org.jgrapht.GraphPath;
+import org.jgrapht.alg.interfaces.SpanningTreeAlgorithm;
+import org.jgrapht.alg.tour.ChristofidesThreeHalvesApproxMetricTSP;
+import org.jgrapht.alg.tour.TwoApproxMetricTSP;
 import org.jgrapht.graph.DefaultEdge;
 
 import java.awt.geom.Point2D;
@@ -35,85 +37,82 @@ public class tsp_view extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        File instance_file = new File("Beispiel3(52).txt");
+        File instance_file = new File("Beispiel1(7).txt");
         Instance instance = new Instance(instance_file);
         Group subview_root = new Group();
-        Group mainview_root = new Group();
+        StackPane mainview_root = new StackPane();
         Scene scene = new Scene(mainview_root, 640, 480);
 
-        DoubleProperty min_x_properti = new SimpleDoubleProperty();
-        min_x_properti.setValue(instance.min_x().getX());
+        double x_diff = instance.max_x() - instance.min_x();
+        double y_diff = instance.max_y() - instance.min_y();
+        double diff = Math.min(x_diff, y_diff);
 
-        DoubleProperty max_x_properti = new SimpleDoubleProperty();
-        max_x_properti.setValue(instance.max_x().getX());
-
-        DoubleProperty min_y_properti = new SimpleDoubleProperty();
-        min_y_properti.setValue(instance.min_y().getY());
-
-        DoubleProperty max_y_properti = new SimpleDoubleProperty();
-        max_y_properti.setValue(instance.max_y().getY());
-
-        ReadOnlyDoubleProperty y_diff = scene.heightProperty();
-        ReadOnlyDoubleProperty x_diff = scene.widthProperty();
-
-        NumberBinding x_max_minus_x_min = Bindings.subtract(max_x_properti, min_x_properti);
-        NumberBinding y_max_minus_y_min = Bindings.subtract(max_y_properti, min_y_properti);
-
-        SubScene subScene = new SubScene(subview_root, x_max_minus_x_min.intValue(), y_max_minus_y_min.intValue());
+        SubScene subScene = new SubScene(subview_root, x_diff, y_diff);
         subScene.setFill(Color.LIGHTGRAY);
 
-        double y_scale = (scene.getHeight() / subScene.getHeight());
-        double x_scale = (scene.getWidth() / subScene.getWidth());
+        NumberBinding scale_height = Bindings.divide(scene.heightProperty(), subScene.heightProperty());
+        NumberBinding scale_width = Bindings.divide(scene.widthProperty(), subScene.widthProperty());
+        NumberBinding scale = Bindings.min(scale_height, scale_width);
 
-        double scale = Math.max(x_scale, y_scale);
+        subScene.scaleXProperty().bind(scale);
+        subScene.scaleYProperty().bind(scale);
 
-        //subScene.setScaleY(-1*scale*0.9);
-        //subScene.setScaleX(scale*0.9);
-        subScene.getTransforms().add(new Scale(scale, scale, 0, 0));
-        subScene.getTransforms().add(new Scale(1, -1, 0, subScene.getHeight() / 2));
-        //subScene.getTransforms().add(new Translate(0,-20));
-
-        subview_root.getTransforms().add(new Scale(0.9, 0.9));
-        subview_root.getTransforms().add(new Translate(0, 100));
-        //subScene.setTranslateX(400);
-        //subScene.setTranslateY(400);
+        subview_root.getTransforms().add(new Translate(-instance.min_x(), -instance.min_y()));
+        subview_root.getTransforms().add(new Scale(0.9, -0.9, instance.min_x() + (instance.max_x() - instance.min_x()) / 2, instance.min_y() + (instance.max_y() - instance.min_y()) / 2));
 
         mainview_root.getChildren().add(subScene);
 
-
-        //x=x_min+a*(x_max-x_min)
-        //       xd=a*x_diff
-
+        int factor = 300;
 
         for (Point2D point : instance.points
         ) {
 
-            /*DoubleProperty x=new SimpleDoubleProperty();
-            x.setValue(point.getX());
 
-            DoubleProperty y=new SimpleDoubleProperty();
-            y.setValue(point.getY());
+            subview_root.getChildren().add(new Circle(point.getX(), point.getY(), diff / factor * 2));
 
-            NumberBinding x_minus_x_min = Bindings.subtract(x, min_x_properti);
-            NumberBinding a = Bindings.divide(x_minus_x_min, x_max_minus_x_min);
 
-            NumberBinding y_minus_y_min = Bindings.subtract(y, min_y_properti);
-            NumberBinding b = Bindings.divide(y_minus_y_min, y_max_minus_y_min);*/
-
-            subview_root.getChildren().add(new Circle(point.getX(), point.getY(), 3));
-            
-            
-            /*Circle circle = new Circle(point.getX(), point.getY(), 3, Color.GREEN);
-            circle.centerXProperty().bind( Bindings.multiply(a,x_diff));
-            circle.centerYProperty().bind(Bindings.multiply(b,y_diff));
-            subview_root.getChildren().add(circle);*/
         }
-
-        for (DefaultEdge edge : instance.getMST().getEdges()
+        SpanningTreeAlgorithm.SpanningTree<DefaultEdge> mst = instance.getMST();
+        for (DefaultEdge edge : mst.getEdges()
         ) {
             Point2D source = instance.graph.getEdgeSource(edge);
             Point2D target = instance.graph.getEdgeTarget(edge);
-            subview_root.getChildren().add(new Line(source.getX(), source.getY(), target.getX(), target.getY()));
+            Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
+            line.setStrokeWidth(diff / factor);
+            subview_root.getChildren().add(line);
+
+        }
+
+        GraphPath<Point2D, DefaultEdge> mst_tour = new TwoApproxMetricTSP<Point2D, DefaultEdge>().getTour(instance.graph);
+        GraphPath<Point2D, DefaultEdge> christofides_tour = new ChristofidesThreeHalvesApproxMetricTSP<Point2D, DefaultEdge>().getTour(instance.graph);
+
+        double mst_ratio = mst_tour.getWeight() / mst.getWeight();
+        double chr_ratio = christofides_tour.getWeight() / mst.getWeight();
+
+        System.out.println("MST=" + mst.getWeight());
+        System.out.println("MST-Tour=" + mst_ratio);
+        System.out.println("Christopides-Tour=" + chr_ratio);
+        for (DefaultEdge edge : mst_tour.getEdgeList()
+        ) {
+            Point2D source = instance.graph.getEdgeSource(edge);
+            Point2D target = instance.graph.getEdgeTarget(edge);
+            Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
+            line.setStrokeWidth(diff / factor);
+            line.setStroke(Color.GREEN);
+
+            subview_root.getChildren().add(line);
+
+        }
+
+        for (DefaultEdge edge : christofides_tour.getEdgeList()
+        ) {
+            Point2D source = instance.graph.getEdgeSource(edge);
+            Point2D target = instance.graph.getEdgeTarget(edge);
+            Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
+            line.setStrokeWidth(diff / factor);
+            line.setStroke(Color.RED);
+
+            subview_root.getChildren().add(line);
 
         }
 
