@@ -3,18 +3,14 @@ package tsp_delaunay;
 import javafx.application.Application;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.NumberBinding;
-import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.SubScene;
-import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
@@ -22,11 +18,36 @@ import org.jgrapht.GraphPath;
 import org.jgrapht.alg.interfaces.SpanningTreeAlgorithm;
 import org.jgrapht.alg.tour.ChristofidesThreeHalvesApproxMetricTSP;
 import org.jgrapht.alg.tour.TwoApproxMetricTSP;
-import org.jgrapht.graph.DefaultEdge;
 
 import java.awt.geom.Point2D;
 import java.io.File;
-import java.util.Random;
+
+
+class Two_Opt_Class extends Task<Void> {
+    final Instance instance;
+
+
+    public Two_Opt_Class(Instance instance) {
+        this.instance = instance;
+
+    }
+
+    @Override
+    protected Void call() {
+        this.instance.tow_opt_for_non_intersecting_edges();
+
+        System.out.println("2-OPT=" + this
+                .instance
+                .subgraphMask
+                .edgeSet()
+                .stream()
+                .mapToDouble((MyEdge edge) -> instance.graph.getEdgeWeight(edge))
+                .sum() / instance.getMST().getWeight()
+        );
+
+        return null;
+    }
+}
 
 public class tsp_view extends Application {
 
@@ -37,11 +58,12 @@ public class tsp_view extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        File instance_file = new File("Beispiel1(7).txt");
+        File instance_file = new File("Beispiel8(1291).txt");
         Instance instance = new Instance(instance_file);
         Group subview_root = new Group();
         StackPane mainview_root = new StackPane();
         Scene scene = new Scene(mainview_root, 640, 480);
+
 
         double x_diff = instance.max_x() - instance.min_x();
         double y_diff = instance.max_y() - instance.min_y();
@@ -72,19 +94,38 @@ public class tsp_view extends Application {
 
 
         }
-        SpanningTreeAlgorithm.SpanningTree<DefaultEdge> mst = instance.getMST();
-        for (DefaultEdge edge : mst.getEdges()
+
+        for (MyEdge edge : instance.graph.edgeSet()
         ) {
             Point2D source = instance.graph.getEdgeSource(edge);
             Point2D target = instance.graph.getEdgeTarget(edge);
             Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
+
             line.setStrokeWidth(diff / factor);
+
+            //new SimpleBooleanProperty(edge.in_tour);
+            //ReadOn
+            line.visibleProperty().bind(edge.get_read_only_in_tour_property());
+
             subview_root.getChildren().add(line);
 
         }
 
-        GraphPath<Point2D, DefaultEdge> mst_tour = new TwoApproxMetricTSP<Point2D, DefaultEdge>().getTour(instance.graph);
-        GraphPath<Point2D, DefaultEdge> christofides_tour = new ChristofidesThreeHalvesApproxMetricTSP<Point2D, DefaultEdge>().getTour(instance.graph);
+
+        SpanningTreeAlgorithm.SpanningTree<MyEdge> mst = instance.getMST();
+//
+
+        GraphPath<Point2D, MyEdge> mst_tour = new TwoApproxMetricTSP<Point2D, MyEdge>().getTour(instance.graph);
+        GraphPath<Point2D, MyEdge> christofides_tour = new ChristofidesThreeHalvesApproxMetricTSP<Point2D, MyEdge>().getTour(instance.graph);
+
+        instance.setTour(mst_tour);
+
+
+        Task<Void> task = new Two_Opt_Class(instance);
+        Thread th = new Thread(task);
+        th.setDaemon(true);
+        th.start();
+
 
         double mst_ratio = mst_tour.getWeight() / mst.getWeight();
         double chr_ratio = christofides_tour.getWeight() / mst.getWeight();
@@ -92,76 +133,17 @@ public class tsp_view extends Application {
         System.out.println("MST=" + mst.getWeight());
         System.out.println("MST-Tour=" + mst_ratio);
         System.out.println("Christopides-Tour=" + chr_ratio);
-        for (DefaultEdge edge : mst_tour.getEdgeList()
-        ) {
-            Point2D source = instance.graph.getEdgeSource(edge);
-            Point2D target = instance.graph.getEdgeTarget(edge);
-            Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
-            line.setStrokeWidth(diff / factor);
-            line.setStroke(Color.GREEN);
-
-            subview_root.getChildren().add(line);
-
-        }
-
-        for (DefaultEdge edge : christofides_tour.getEdgeList()
-        ) {
-            Point2D source = instance.graph.getEdgeSource(edge);
-            Point2D target = instance.graph.getEdgeTarget(edge);
-            Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
-            line.setStrokeWidth(diff / factor);
-            line.setStroke(Color.RED);
-
-            subview_root.getChildren().add(line);
-
-        }
 
 
-        /*
-        Scene scene = new Scene(root, 200, 150);
-        scene.setFill(Color.LIGHTGRAY);
-        */
-
-        Circle circle = new Circle(60, 40, 30, Color.GREEN);
-
-        Text text = new Text(10, 90, "JavaFX Scene");
-        text.setFill(Color.DARKRED);
-
-        Font font = new Font(20);
-        text.setFont(font);
-
-        //root.getChildren().add(circle);
-        //root.getChildren().add(text);
-//      stage.setScene(scene);
-        String[] points = {"Ag", "cd", "xy"};
-        Random wuerfel = new Random();
-
-        for (String x : points
-        ) {
-            //System.out.println(x);
-            Text text_new = new Text(wuerfel.nextInt(640), wuerfel.nextInt(480), x);
-            text.setFill(Color.DARKRED);
-
-            text.setFont(font);
-            //root.getChildren().add(text_new);
-
-        }
 
 
-        String javaVersion = System.getProperty("java.version");
-        String javafxVersion = System.getProperty("javafx.version");
-        Label l = new Label("Hello, JavaFX " + javafxVersion + ", running on Java " + javaVersion + ".");
-        //root.getChildren().add(l);
-
-
-        ObservableList<Node> list = subview_root.getChildren();
-        //Text first_text = (Text) list.get(1);
 
 
         primaryStage.setScene(scene);
 
         primaryStage.show();
-
+//
 
     }
+
 }
