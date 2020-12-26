@@ -1,15 +1,14 @@
 package tsp_delaunay;
 
 
-import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyBooleanWrapper;
+//import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
+
+import jdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.alg.interfaces.SpanningTreeAlgorithm;
 import org.jgrapht.alg.spanning.KruskalMinimumSpanningTree;
 import org.jgrapht.graph.DefaultUndirectedWeightedGraph;
-import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.MaskSubgraph;
 
 import java.awt.geom.Line2D;
@@ -18,32 +17,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
-
-class MyEdge extends DefaultWeightedEdge {
-    private final ReadOnlyBooleanWrapper in_tour_v;
-    private boolean in_tour;
-
-
-    public MyEdge() {
-        super();
-        this.in_tour_v = new ReadOnlyBooleanWrapper(false);
-        this.in_tour = false;
-    }
-
-    public boolean get_in_tour() {
-        return in_tour;
-    }
-
-    public void set_in_tour(boolean in_tour) {
-        this.in_tour = in_tour;
-        Platform.runLater(() -> in_tour_v.set(in_tour));
-
-    }
-
-    public ReadOnlyBooleanProperty get_read_only_in_tour_property() {
-        return in_tour_v.getReadOnlyProperty();
-    }
-}
 
 public class Instance {
 
@@ -68,8 +41,9 @@ public class Instance {
 
         }
 
-        this.points = this.points.stream().unordered().distinct().collect(Collectors
-                .toCollection(ArrayList::new));
+        this.points = this.points.stream().unordered()
+                .distinct()
+                .collect(Collectors.toCollection(ArrayList::new));
 
         //boolean new_array =new ArrayList < Point2D >;
 
@@ -77,51 +51,15 @@ public class Instance {
             for (int j = i + 1; j < points.size(); j++) {
                 MyEdge edge = graph.addEdge(points.get(i), points.get(j));
                 graph.setEdgeWeight(edge, points.get(i).distance(points.get(j)));
+                int order = this.set_usefull_order_off_edge(edge, 5);
+                edge.set_use_full_order(order);
             }
         }
 
 
     }
 
-    public void tow_opt_for_non_intersecting_edges() {
-        int counter = 0;
-        int unaddid = 0;
-        while (unaddid < this.subgraphMask.edgeSet().size() * 2) {
 
-            counter += 1;
-            System.out.println(counter);
-            //i=0;
-            Object[] array = this.subgraphMask.edgeSet().toArray();
-            for (int i = 0; i < array.length; i++) {
-                unaddid += 1;
-                MyEdge edge1 = (MyEdge) array[i];
-                Point2D p1 = this.graph.getEdgeSource(edge1);
-                Point2D p2 = this.graph.getEdgeTarget(edge1);
-                //System.out.println(i);
-                for (int j = i + 1; j < array.length; j++) {
-                    MyEdge edge2 = (MyEdge) array[j];
-                    Point2D p3 = this.graph.getEdgeSource(edge2);
-                    Point2D p4 = this.graph.getEdgeTarget(edge2);
-                    if (Line2D.linesIntersect(p1.getX(), p1.getY(), p2.getX(), p2.getY(), p3.getX(), p3.getY(), p4.getX(), p4.getY())) {
-                        if (!Objects.equals(edge1, edge2)) {
-                            if (!Objects.equals(p1, p3) && !Objects.equals(p1, p4) && !Objects.equals(p2, p3) && !Objects.equals(p2, p4)) {
-
-                                double result = this.solveEdgeCrossing(edge1, edge2);
-                                if (result < -0.0001) {
-                                    //System.out.println(submask.edgeSet().size());
-                                    //System.out.println(result);
-                                }
-                                unaddid = 0;
-                            }
-
-                        }
-                    }
-                }
-            }
-
-
-        }
-    }
 
     public void readPointsFromFile(File file) {
         this.points = new ArrayList<>();
@@ -300,6 +238,140 @@ public class Instance {
         }
         return result;
 
+    }
+
+    public void tow_opt_for_non_intersecting_edges() {
+        int counter = 0;
+        int unaddid = 0;
+        while (unaddid < this.subgraphMask.edgeSet().size() * 2) {
+
+            counter += 1;
+            System.out.println(counter);
+            //i=0;
+            Object[] array = this.subgraphMask.edgeSet().toArray();
+            for (int i = 0; i < array.length; i++) {
+                unaddid += 1;
+                MyEdge edge1 = (MyEdge) array[i];
+                Point2D p1 = this.graph.getEdgeSource(edge1);
+                Point2D p2 = this.graph.getEdgeTarget(edge1);
+                //System.out.println(i);
+                for (int j = i + 1; j < array.length; j++) {
+                    MyEdge edge2 = (MyEdge) array[j];
+                    Point2D p3 = this.graph.getEdgeSource(edge2);
+                    Point2D p4 = this.graph.getEdgeTarget(edge2);
+                    if (Line2D.linesIntersect(p1.getX(), p1.getY(), p2.getX(), p2.getY(), p3.getX(), p3.getY(), p4.getX(), p4.getY())) {
+                        if (!Objects.equals(edge1, edge2)) {
+                            if (!Objects.equals(p1, p3) && !Objects.equals(p1, p4) && !Objects.equals(p2, p3) && !Objects.equals(p2, p4)) {
+
+                                double result = this.solveEdgeCrossing(edge1, edge2);
+                                if (result < -0.0001) {
+                                    //System.out.println(submask.edgeSet().size());
+                                    //System.out.println(result);
+                                }
+                                unaddid = 0;
+                            }
+
+                        }
+                    }
+                }
+            }
+
+
+        }
+    }
+
+    int set_usefull_order_off_edge(MyEdge edge, int limit) {
+        Point2D source = this.graph.getEdgeSource(edge);
+        Point2D target = this.graph.getEdgeTarget(edge);
+        Line2D line = new Line2D.Double(source, target);
+
+        ArrayList<Point2D> left_points = new ArrayList<Point2D>();
+        ArrayList<Point2D> right_points = new ArrayList<Point2D>();
+        int on_line = 0;
+
+        for (Point2D point : this.points
+        ) {
+
+            if (point.equals(source) || point.equals(target)) {
+                continue;
+            }
+
+            if (line.ptLineDist(point) > 0) {
+
+
+                if (line.relativeCCW(point) > 0) {
+                    right_points.add(point);
+                } else {
+                    left_points.add(point);
+                }
+            } else {
+                if (line.ptSegDist(point) > 0) {
+
+                } else {
+                    on_line += 1;
+                }
+
+            }
+
+
+        }
+
+        double[] left_points_sorted = left_points.stream().mapToDouble((Point2D point) -> {
+            Point2D.Double center = this.calculate_circle_center(edge, point);
+            return line.ptLineDist(center) * line.relativeCCW(center);
+        }).sorted().toArray();
+        double[] right_points_sorted = right_points.stream().mapToDouble((Point2D point) -> {
+            Point2D.Double center = this.calculate_circle_center(edge, point);
+            return line.ptLineDist(center) * line.relativeCCW(center);
+        }).sorted().toArray();
+
+
+        int right_index = 0;
+        int left_index = 0;
+        try {
+            double left_max = left_points_sorted[left_points_sorted.length - 1];
+            right_index = 0;
+            while (left_max > right_points_sorted[right_index]) {
+                right_index += 1;
+            }
+
+            double test_r = right_points_sorted[right_index + 1];
+            double right_min = right_points_sorted[0];
+            left_index = 0;
+            while (right_min < left_points_sorted[left_points_sorted.length - (left_index + 1)]) {
+                left_index += 1;
+            }
+            double test_l = left_points_sorted[left_points_sorted.length - (left_index + 1 + 1)];
+        } catch (Exception e) {
+            return limit;
+        }
+
+
+        return Math.max(left_index, right_index);
+
+
+    }
+
+    Point2D.Double calculate_circle_center(MyEdge edge, Point2D point) {
+        Point2D p1 = point;
+        Point2D p2 = this.graph.getEdgeSource(edge);
+        Point2D p3 = this.graph.getEdgeTarget(edge);
+
+        double temp = p2.getX() * p2.getX() + p2.getY() * p2.getY();
+        double bc = (p1.getX() * p1.getX() + p1.getY() * p1.getY() - temp) / 2;
+        double cd = (temp - p3.getX() * p3.getX() - p3.getY() * p3.getY()) / 2;
+
+        double det = (p1.getX() - p2.getX()) * (p2.getY() - p3.getY()) - (p2.getX() - p3.getX()) * (p1.getY() - p2.getY());
+
+        if (Math.abs(det) < 1.0e-6) {
+            throw new ValueException("Die drei Punkte liegen warscheinlich auf einer Line");
+        }
+
+        // Center of circle
+        double cx = (bc * (p2.getY() - p3.getY()) - cd * (p1.getY() - p2.getY())) / det;
+        double cy = ((p1.getX() - p2.getX()) * cd - (p2.getX() - p3.getX()) * bc) / det;
+
+        return new Point2D.Double(cx, cy);
     }
 
 

@@ -7,6 +7,8 @@ import javafx.concurrent.Task;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.SubScene;
+import javafx.scene.control.CheckBox;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -58,7 +60,7 @@ public class tsp_view extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        File instance_file = new File("Beispiel8(1291).txt");
+        File instance_file = new File("Beispiel3(52).txt");
         Instance instance = new Instance(instance_file);
         Group subview_root = new Group();
         StackPane mainview_root = new StackPane();
@@ -83,6 +85,17 @@ public class tsp_view extends Application {
         subview_root.getTransforms().add(new Scale(0.9, -0.9, instance.min_x() + (instance.max_x() - instance.min_x()) / 2, instance.min_y() + (instance.max_y() - instance.min_y()) / 2));
 
         mainview_root.getChildren().add(subScene);
+        CheckBox order0 = new CheckBox("Order 0");
+        CheckBox order1 = new CheckBox("Order 1");
+        CheckBox order2 = new CheckBox("Order 2");
+        CheckBox order3 = new CheckBox("Order 3");
+        StackPane hbox_groop = new StackPane();
+        hbox_groop.getChildren().add(order0);
+        hbox_groop.getChildren().add(order1);
+        hbox_groop.getChildren().add(order2);
+        hbox_groop.getChildren().add(order3);
+        HBox hbox = new HBox(order0, order1, order2, order3);
+        mainview_root.getChildren().add(hbox);
 
         int factor = 300;
 
@@ -100,14 +113,27 @@ public class tsp_view extends Application {
             Point2D source = instance.graph.getEdgeSource(edge);
             Point2D target = instance.graph.getEdgeTarget(edge);
             Line line = new Line(source.getX(), source.getY(), target.getX(), target.getY());
+            Line line1 = new Line(source.getX(), source.getY(), target.getX(), target.getY());
+            Line line2 = new Line(source.getX(), source.getY(), target.getX(), target.getY());
 
             line.setStrokeWidth(diff / factor);
+            line1.setStrokeWidth(diff / factor);
+            line2.setStrokeWidth(diff / factor);
+
 
             //new SimpleBooleanProperty(edge.in_tour);
             //ReadOn
             line.visibleProperty().bind(edge.get_read_only_in_tour_property());
 
+            line1.visibleProperty().bind(edge.get_read_only_use_full_order_property().isEqualTo(1).and(order1.selectedProperty()));
+            line1.setStroke(Color.RED);
+
+            line2.visibleProperty().bind(edge.get_read_only_use_full_order_property().isEqualTo(2).and(order2.selectedProperty()));
+            line2.setStroke(Color.BLUE);
+
             subview_root.getChildren().add(line);
+            subview_root.getChildren().add(line1);
+            subview_root.getChildren().add(line2);
 
         }
 
