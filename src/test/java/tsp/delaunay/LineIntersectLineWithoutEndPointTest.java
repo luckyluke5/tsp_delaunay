@@ -44,15 +44,5 @@ public class LineIntersectLineWithoutEndPointTest {
 
     }
 
-    @Test
-    public void test4() {
 
-        Line2D.Double line = new Line2D.Double(0, 0, 10, 10);
-        Line2D.Double line2 = new Line2D.Double(0, 0, 10, 10);
-
-        boolean result = TriangulationBuilder.areLinesIntersectingWithoutEndpoints(line, line2);
-
-        Assertions.assertTrue(result);
-
-    }
 }
